@@ -16,14 +16,20 @@ const AT_RISK_THRESHOLD = 50;
 //   - "learning gaps": topics where a student scored below the at-risk
 //     threshold, aggregated across students — not P2's assessment-based
 //     gap detection
+//   - byRegion: the same total/average/at-risk figures grouped by
+//     Student.location.district, so leadership can see where support is
+//     actually needed geographically instead of only an org-wide number
 export async function getAnalytics(req, res) {
   try {
-    const [submissions, totalStudents] = await Promise.all([
+    const [submissions, allStudents] = await Promise.all([
       Submission.find({ grade: { $ne: null } })
         .sort({ submittedAt: 1 })
         .populate('assignment', 'topic subject title'),
-      Student.countDocuments(),
+      Student.find().select('personal.name location.district location.cluster'),
     ]);
+
+    const totalStudents = allStudents.length;
+    const studentById = new Map(allStudents.map((s) => [String(s._id), s]));
 
     const byStudent = new Map();
     for (const s of submissions) {
@@ -39,16 +45,35 @@ export async function getAnalytics(req, res) {
     const studentsRequiringSupport = [];
     const gapCounts = new Map();
 
+    // district -> { totalStudents, sumGrades, gradeCount, studentsAtRisk }
+    const regionStats = new Map();
+    for (const s of allStudents) {
+      const district = s.location?.district || 'Unknown';
+      if (!regionStats.has(district)) {
+        regionStats.set(district, { totalStudents: 0, sumGrades: 0, gradeCount: 0, studentsAtRisk: 0 });
+      }
+      regionStats.get(district).totalStudents += 1;
+    }
+
     for (const [studentId, subs] of byStudent) {
       const grades = subs.map((s) => s.grade);
       sumGrades += grades.reduce((a, b) => a + b, 0);
       gradeCount += grades.length;
 
       const avg = grades.reduce((a, b) => a + b, 0) / grades.length;
+      const isAtRisk = avg < AT_RISK_THRESHOLD;
 
-      if (avg < AT_RISK_THRESHOLD) {
+      if (isAtRisk) {
         studentsAtRisk += 1;
         studentsRequiringSupport.push({ studentId, averageGrade: Math.round(avg) });
+      }
+
+      const district = studentById.get(studentId)?.location?.district || 'Unknown';
+      const region = regionStats.get(district);
+      if (region) {
+        region.sumGrades += grades.reduce((a, b) => a + b, 0);
+        region.gradeCount += grades.length;
+        if (isAtRisk) region.studentsAtRisk += 1;
       }
 
       if (grades.length >= 2) {
@@ -73,13 +98,18 @@ export async function getAnalytics(req, res) {
       .slice(0, 5)
       .map(([topic, studentCount]) => ({ topic, studentCount }));
 
-    const supportStudentRecords = await Student.find({
-      _id: { $in: studentsRequiringSupport.map((s) => s.studentId) },
-    }).select('personal.name');
-    const nameById = new Map(supportStudentRecords.map((s) => [String(s._id), s.personal?.name]));
     studentsRequiringSupport.forEach((s) => {
-      s.studentName = nameById.get(s.studentId) || null;
+      s.studentName = studentById.get(s.studentId)?.personal?.name || null;
     });
+
+    const byRegion = [...regionStats.entries()]
+      .map(([district, stats]) => ({
+        district,
+        totalStudents: stats.totalStudents,
+        averagePerformance: stats.gradeCount > 0 ? Math.round(stats.sumGrades / stats.gradeCount) : null,
+        studentsAtRisk: stats.studentsAtRisk,
+      }))
+      .sort((a, b) => b.totalStudents - a.totalStudents);
 
     res.json({
       totalStudents,
@@ -88,6 +118,7 @@ export async function getAnalytics(req, res) {
       studentsAtRisk,
       commonLearningGaps,
       studentsRequiringSupport,
+      byRegion,
     });
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch leadership analytics', error: err.message });
