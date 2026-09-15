@@ -21,7 +21,7 @@ import * as educatorApi from './api/educator';
 import EducatorDashboard from './pages/EducatorDashboard.jsx';
 import ParentDashboard from './pages/ParentDashboard.jsx';
 import LeadershipDashboard from './pages/LeadershipDashboard.jsx';
-import { StudentLoginForm } from './features/auth/index.js';
+import { StudentLoginForm, LoginForm } from './features/auth/index.js';
 
 // Fallback demo students if offline
 const FALLBACK_STUDENTS = [
@@ -51,6 +51,7 @@ function NavBar({ isOffline }) {
     { to: '/parent',        label: 'Parent' },
     { to: '/leadership',    label: 'Leadership' },
     { to: '/student-login', label: 'Student Login' },
+    { to: '/login',         label: 'Login' },
   ];
   return (
     <header className="sticky top-0 z-20 bg-indigo-700 text-white shadow-lg">
@@ -423,6 +424,7 @@ export default function App() {
             <Route path="/parent"        element={<ParentDashboard />} />
             <Route path="/leadership"    element={<LeadershipDashboard />} />
             <Route path="/student-login" element={<StudentLoginPage />} />
+            <Route path="/login"         element={<LoginForm />} />
           </Routes>
         </main>
       </div>
