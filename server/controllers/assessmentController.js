@@ -1,9 +1,21 @@
 import mongoose from 'mongoose';
+import Progress from '../models/Progress.js';
 import {
   createAssessmentService,
   getStudentAssessmentsService,
   getStudentProgressService,
 } from '../services/assessmentService.js';
+import { getRecommendations } from '../services/recommendationService.js';
+
+/**
+ * Helper to retrieve Student model instance registered with Mongoose
+ */
+const getStudentModel = () => {
+  if (mongoose.models.Student) {
+    return mongoose.models.Student;
+  }
+  return mongoose.model('Student');
+};
 
 /**
  * Controller to handle POST /api/assessments
@@ -115,6 +127,55 @@ export const getStudentProgress = async (req, res) => {
       status: 'success',
       data: {
         progress: progress || null,
+      },
+    });
+  } catch (error) {
+    if (error.statusCode === 400 || error.statusCode === 404) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+/**
+ * Controller to handle GET /api/students/:id/recommendations
+ */
+export const getStudentRecommendations = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 1. Validate student ID format
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid student ID' });
+    }
+
+    // 2. Verify student exists using existing Student model
+    const Student = getStudentModel();
+    const student = await Student.findById(id);
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    // 3. Retrieve student's current Progress record
+    const progress = await Progress.findOne({ student: id });
+
+    // 4. If no Progress record or learningGaps is empty, return empty array []
+    if (!progress || !progress.learningGaps || progress.learningGaps.length === 0) {
+      return res.status(200).json({
+        status: 'success',
+        data: {
+          recommendations: [],
+        },
+      });
+    }
+
+    // 5. Pass learningGaps to recommendation service
+    const recommendations = getRecommendations(progress.learningGaps);
+
+    return res.status(200).json({
+      status: 'success',
+      data: {
+        recommendations,
       },
     });
   } catch (error) {

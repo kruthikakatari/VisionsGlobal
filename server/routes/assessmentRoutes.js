@@ -3,6 +3,7 @@ import {
   createAssessment,
   getStudentAssessments,
   getStudentProgress,
+  getStudentRecommendations,
 } from '../controllers/assessmentController.js';
 
 // Resolve Person 1's auth middleware adhering to the contract
@@ -41,5 +42,9 @@ router.get('/:id/assessments', protect, getStudentAssessments);
 // 3. GET /api/students/:id/progress (Authenticated users)
 router.get('/students/:id/progress', protect, getStudentProgress);
 router.get('/:id/progress', protect, getStudentProgress);
+
+// 4. GET /api/students/:id/recommendations (Restricted to educators)
+router.get('/students/:id/recommendations', protect, restrictTo('educator'), getStudentRecommendations);
+router.get('/:id/recommendations', protect, restrictTo('educator'), getStudentRecommendations);
 
 export default router;
