@@ -51,11 +51,22 @@ const assignmentSchema = new mongoose.Schema(
       ref: 'Educator',
       required: true,
     },
-    // Set true for assignments produced by the AI Educator Assistant (Phase 5).
+    // Set true for assignments produced by the AI Educator Assistant.
     aiGenerated: {
       type: Boolean,
       default: false,
     },
+    // Structured questions (used by AI-generated assignments so the frontend
+    // can render them directly instead of parsing free text). Optional —
+    // manually-created assignments can rely on `description` alone.
+    questions: [
+      {
+        question: { type: String, required: true },
+        type: { type: String, enum: ['MCQ', 'Short Answer'], default: 'Short Answer' },
+        options: [String],
+        answer: String,
+      },
+    ],
   },
   { timestamps: true }
 );

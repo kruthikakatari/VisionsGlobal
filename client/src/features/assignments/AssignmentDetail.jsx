@@ -7,7 +7,6 @@ function AssignmentDetail({ assignmentId, onChanged }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [responseText, setResponseText] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   function load() {
@@ -30,14 +29,13 @@ function AssignmentDetail({ assignmentId, onChanged }) {
   if (!data) return null;
 
   const { assignment, submissions, mySubmission } = data;
+  const hasQuestions = Array.isArray(assignment.questions) && assignment.questions.length > 0;
 
-  async function handleSubmit(e) {
-    e.preventDefault();
+  async function handleSubmit(payload) {
     setSubmitting(true);
     setError('');
     try {
-      await createSubmission({ assignmentId, responseText });
-      setResponseText('');
+      await createSubmission({ assignmentId, ...payload });
       load();
       onChanged?.();
     } catch (err) {
@@ -63,37 +61,22 @@ function AssignmentDetail({ assignmentId, onChanged }) {
         {assignment.subject}
         {assignment.topic ? ` · ${assignment.topic}` : ''}
         {assignment.difficulty ? ` · ${assignment.difficulty}` : ''}
+        {assignment.aiGenerated ? ' · AI-generated' : ''}
       </p>
-      <p>{assignment.description}</p>
+      {!hasQuestions && <p>{assignment.description}</p>}
 
       {user?.role === 'student' && (
         <div className="submission-section">
           {mySubmission ? (
-            <div className="submission-status">
-              <p>
-                Status: <strong>{mySubmission.status}</strong>
-                {mySubmission.grade !== undefined && mySubmission.grade !== null
-                  ? ` · Grade: ${mySubmission.grade}`
-                  : ''}
-              </p>
-              {mySubmission.feedback && <p>Feedback: {mySubmission.feedback}</p>}
-              <p className="assignment-item-meta">Your answer: {mySubmission.responseText}</p>
-            </div>
+            <SubmissionSummary submission={mySubmission} />
+          ) : hasQuestions ? (
+            <QuestionSubmitForm
+              questions={assignment.questions}
+              submitting={submitting}
+              onSubmit={(answers) => handleSubmit({ answers })}
+            />
           ) : (
-            <form onSubmit={handleSubmit} className="submission-form">
-              <label>
-                Your Answer
-                <textarea
-                  value={responseText}
-                  onChange={(e) => setResponseText(e.target.value)}
-                  required
-                  rows={4}
-                />
-              </label>
-              <button type="submit" disabled={submitting}>
-                {submitting ? 'Submitting...' : 'Submit Assignment'}
-              </button>
-            </form>
+            <TextSubmitForm submitting={submitting} onSubmit={(responseText) => handleSubmit({ responseText })} />
           )}
         </div>
       )}
@@ -113,6 +96,104 @@ function AssignmentDetail({ assignmentId, onChanged }) {
   );
 }
 
+function TextSubmitForm({ submitting, onSubmit }) {
+  const [responseText, setResponseText] = useState('');
+
+  return (
+    <form
+      className="submission-form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit(responseText);
+      }}
+    >
+      <label>
+        Your Answer
+        <textarea value={responseText} onChange={(e) => setResponseText(e.target.value)} required rows={4} />
+      </label>
+      <button type="submit" disabled={submitting}>
+        {submitting ? 'Submitting...' : 'Submit Assignment'}
+      </button>
+    </form>
+  );
+}
+
+function QuestionSubmitForm({ questions, submitting, onSubmit }) {
+  const [answers, setAnswers] = useState(() => questions.map((q) => ({ question: q.question, answer: '' })));
+
+  function setAnswer(index, value) {
+    setAnswers((prev) => prev.map((a, i) => (i === index ? { ...a, answer: value } : a)));
+  }
+
+  return (
+    <form
+      className="submission-form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit(answers);
+      }}
+    >
+      {questions.map((q, i) => (
+        <div key={i} className="question-block">
+          <p className="question-text">
+            {i + 1}. {q.question}
+          </p>
+          {q.type === 'MCQ' && q.options?.length > 0 ? (
+            <div className="mcq-options">
+              {q.options.map((opt, j) => (
+                <label key={j} className="mcq-option">
+                  <input
+                    type="radio"
+                    name={`q-${i}`}
+                    value={opt}
+                    checked={answers[i].answer === opt}
+                    onChange={(e) => setAnswer(i, e.target.value)}
+                    required
+                  />
+                  {opt}
+                </label>
+              ))}
+            </div>
+          ) : (
+            <input
+              type="text"
+              value={answers[i].answer}
+              onChange={(e) => setAnswer(i, e.target.value)}
+              required
+            />
+          )}
+        </div>
+      ))}
+      <button type="submit" disabled={submitting}>
+        {submitting ? 'Submitting...' : 'Submit Assignment'}
+      </button>
+    </form>
+  );
+}
+
+function SubmissionSummary({ submission }) {
+  return (
+    <div className="submission-status">
+      <p>
+        Status: <strong>{submission.status}</strong>
+        {submission.grade !== undefined && submission.grade !== null ? ` · Grade: ${submission.grade}` : ''}
+      </p>
+      {submission.feedback && <p>Feedback: {submission.feedback}</p>}
+      {submission.answers?.length > 0 ? (
+        <ol className="answer-list">
+          {submission.answers.map((a, i) => (
+            <li key={i}>
+              <span>{a.question}</span> — <strong>{a.answer}</strong>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="assignment-item-meta">Your answer: {submission.responseText}</p>
+      )}
+    </div>
+  );
+}
+
 function SubmissionRow({ submission, onReview }) {
   const [grade, setGrade] = useState(submission.grade ?? '');
   const [feedback, setFeedback] = useState(submission.feedback ?? '');
@@ -122,7 +203,17 @@ function SubmissionRow({ submission, onReview }) {
       <p>
         Student: {submission.student} · Status: <strong>{submission.status}</strong>
       </p>
-      <p className="assignment-item-meta">{submission.responseText}</p>
+      {submission.answers?.length > 0 ? (
+        <ol className="answer-list">
+          {submission.answers.map((a, i) => (
+            <li key={i}>
+              <span>{a.question}</span> — <strong>{a.answer}</strong>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="assignment-item-meta">{submission.responseText}</p>
+      )}
       <div className="review-controls">
         <input
           type="number"

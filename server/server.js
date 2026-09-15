@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import connectDB from './config/db.js';
 import contentRoutes from './routes/contentRoutes.js';
 import assignmentRoutes from './routes/assignmentRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/content', contentRoutes);
 app.use('/api', assignmentRoutes);
+app.use('/api/ai', aiRoutes);
 
 connectDB()
   .then(() => {

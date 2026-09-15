@@ -22,16 +22,7 @@ export async function getAssignments(req, res) {
 // POST /api/assignments (educator only)
 export async function createAssignment(req, res) {
   try {
-    const { title, subject, topic, description, difficulty, language, dueDate, assignedTo, sourceContent } =
-      req.body;
-
-    if (!title || !subject || !description || !Array.isArray(assignedTo) || assignedTo.length === 0) {
-      return res.status(400).json({
-        message: 'title, subject, description and assignedTo (at least one student id) are required',
-      });
-    }
-
-    const assignment = await Assignment.create({
+    const {
       title,
       subject,
       topic,
@@ -40,7 +31,32 @@ export async function createAssignment(req, res) {
       language,
       dueDate,
       assignedTo,
+      sourceContent,
+      questions,
+      aiGenerated,
+    } = req.body;
+
+    const hasQuestions = Array.isArray(questions) && questions.length > 0;
+
+    if (!title || !subject || (!description && !hasQuestions) || !Array.isArray(assignedTo) || assignedTo.length === 0) {
+      return res.status(400).json({
+        message:
+          'title, subject, assignedTo (at least one student id), and either description or questions are required',
+      });
+    }
+
+    const assignment = await Assignment.create({
+      title,
+      subject,
+      topic,
+      description: description || `AI-generated assignment with ${questions.length} question(s).`,
+      difficulty,
+      language,
+      dueDate,
+      assignedTo,
       sourceContent: sourceContent || undefined,
+      questions: hasQuestions ? questions : undefined,
+      aiGenerated: Boolean(aiGenerated),
       createdBy: req.user.id,
     });
 
