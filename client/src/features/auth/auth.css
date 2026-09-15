@@ -1,53 +1,238 @@
-.student-login {
-  text-align: left;
+/* ── Auth Card ─────────────────────────────────────────────────────────────── */
+.auth-card {
+  max-width: 420px;
+  margin: 3rem auto;
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(79, 70, 229, 0.12), 0 4px 16px rgba(0,0,0,0.06);
+  overflow: hidden;
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
-.student-login-form {
-  display: grid;
-  gap: 0.75rem;
-  padding: 1rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  background-color: #f8fafc;
+.auth-header {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  padding: 2.5rem 2rem 2rem;
+  text-align: center;
+  color: white;
 }
 
-.student-login-form label {
-  display: grid;
-  gap: 0.25rem;
+.auth-logo {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.auth-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin: 0 0 0.25rem;
+}
+
+.auth-subtitle {
+  font-size: 0.9rem;
+  opacity: 0.85;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* ── Tabs ──────────────────────────────────────────────────────────────────── */
+.auth-tabs {
+  display: flex;
+  border-bottom: 2px solid #f1f0ff;
+  background: #fafafa;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 0.9rem 1rem;
+  border: none;
+  background: transparent;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+}
+
+.auth-tab:hover {
+  color: #4f46e5;
+  background: #f5f3ff;
+}
+
+.auth-tab--active {
+  color: #4f46e5;
+  border-bottom-color: #4f46e5;
+  background: #f5f3ff;
+}
+
+/* ── Form ──────────────────────────────────────────────────────────────────── */
+.auth-form {
+  padding: 1.75rem 2rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.auth-label {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #334155;
+  color: #374151;
 }
 
-.student-login-form small {
-  font-weight: 400;
-  color: #64748b;
+.auth-input {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 1rem;
+  background: #f9fafb;
+  color: #111827;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
 }
 
-.student-login-form input {
-  font: inherit;
-  padding: 0.5rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
+.auth-input:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+  background: #fff;
 }
 
-.student-login-form button {
-  justify-self: start;
-  padding: 0.5rem 1.25rem;
-  border: none;
-  border-radius: 6px;
-  background-color: #2563eb;
+.auth-hint {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  line-height: 1.4;
+}
+
+.auth-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.auth-submit {
+  width: 100%;
+  padding: 0.95rem;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
   color: white;
-  font-weight: 600;
+  border: none;
+  border-radius: 14px;
+  font-size: 1rem;
+  font-weight: 700;
   cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+  margin-top: 0.25rem;
 }
 
-.student-login-form button:disabled {
+.auth-submit:hover:not(:disabled) {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.auth-submit:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.auth-submit:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-.student-login-error {
-  color: #b91c1c;
-  font-size: 0.875rem;
+.auth-spinner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ── Credential Card (shown after student registration) ─────────────────────── */
+.credential-card {
+  margin-top: 1.25rem;
+  background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+  border: 1.5px solid #86efac;
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.credential-card__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #15803d;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.credential-card__subtitle {
+  font-size: 0.8rem;
+  color: #166534;
+  margin: 0;
+}
+
+.credential-card__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+}
+
+.credential-card__key {
+  font-size: 0.8rem;
+  color: #6b7280;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.credential-card__val {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #111827;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.5px;
+}
+
+.credential-card__copy {
+  background: none;
+  border: 1px solid #86efac;
+  border-radius: 6px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+  color: #15803d;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.15s;
+}
+
+.credential-card__copy:hover {
+  background: #dcfce7;
+}
+
+.credential-card__warn {
+  font-size: 0.78rem;
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  margin: 0;
 }

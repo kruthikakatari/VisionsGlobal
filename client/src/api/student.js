@@ -28,11 +28,14 @@ export const getStudentById = async (id) => {
 
 /**
  * Create a new student record
+ * Returns { student, credentials } where credentials contains
+ * { studentId, studentPassword, parentPassword } for the educator to share.
  * @param {Object} studentData
  */
 export const createStudent = async (studentData) => {
   const res = await post('/students', studentData);
-  return res.data?.student;
+  // res.data has { student, credentials }
+  return res.data || {};
 };
 
 /**

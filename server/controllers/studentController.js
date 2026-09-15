@@ -18,10 +18,10 @@ export const getStudents = async (req, res) => {
 
 export const createStudent = async (req, res) => {
   try {
-    const newStudent = await studentService.createStudent(req.body);
+    const { student, credentials } = await studentService.createStudent(req.body);
     res.status(201).json({
       status: 'success',
-      data: { student: newStudent }
+      data: { student, credentials }
     });
   } catch (err) {
     res.status(400).json({

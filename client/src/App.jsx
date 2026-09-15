@@ -139,17 +139,21 @@ function StudentsPage({ isOffline, setIsOffline }) {
     try {
       await ensureAuth();
       const sanitized = sanitizeStudentData(formData);
-      const created = await studentApi.createStudent(sanitized);
-      if (created) {
-        setStudents((prev) => [created, ...prev]);
+      const res = await studentApi.createStudent(sanitized);
+      // res now has { student, credentials } from the updated API
+      if (res?.student) {
+        setStudents((prev) => [res.student, ...prev]);
       }
       setIsOffline(false);
-      setView('list');
+      // Return credentials so AddEditStudent can show the credential card.
+      // We do NOT navigate away yet — the user needs to see/copy the credentials first.
+      return { credentials: res?.credentials || null };
     } catch (err) {
       console.error('Failed to save student to DB:', err);
       alert(`Failed to save student: ${err.message}`);
     }
   };
+
 
   const handleSaveEdit = async (formData) => {
     try {
