@@ -9,7 +9,9 @@ export async function getAssignments(req, res) {
     if (req.user.role === 'educator') {
       assignments = await Assignment.find({ createdBy: req.user.id }).sort({ createdAt: -1 });
     } else if (req.user.role === 'student') {
-      assignments = await Assignment.find({ assignedTo: req.user.id }).sort({ createdAt: -1 });
+      // assignedTo references Student._id, not the student's User._id —
+      // req.user.studentProfile is the link (see models/User.js).
+      assignments = await Assignment.find({ assignedTo: req.user.studentProfile }).sort({ createdAt: -1 });
     } else {
       assignments = [];
     }
@@ -80,9 +82,10 @@ export async function getAssignmentById(req, res) {
       return res.status(404).json({ message: 'Assignment not found' });
     }
 
+    const studentProfileId = req.user.studentProfile ? String(req.user.studentProfile) : null;
     const isOwnerEducator = req.user.role === 'educator' && String(assignment.createdBy) === req.user.id;
     const isAssignedStudent =
-      req.user.role === 'student' && assignment.assignedTo.some((id) => String(id) === req.user.id);
+      req.user.role === 'student' && assignment.assignedTo.some((id) => String(id) === studentProfileId);
 
     if (!isOwnerEducator && !isAssignedStudent) {
       return res.status(403).json({ message: 'Not authorized to view this assignment' });
@@ -93,7 +96,7 @@ export async function getAssignmentById(req, res) {
       return res.json({ assignment, submissions });
     }
 
-    const mySubmission = await Submission.findOne({ assignment: assignment._id, student: req.user.id });
+    const mySubmission = await Submission.findOne({ assignment: assignment._id, student: studentProfileId });
     return res.json({ assignment, mySubmission });
   } catch (err) {
     if (err.name === 'CastError') {

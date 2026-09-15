@@ -59,6 +59,10 @@
   gap: 1rem;
 }
 
+.parent-student-name {
+  margin: 0;
+}
+
 .parent-section {
   padding: 1rem;
   border: 1px solid #e2e8f0;

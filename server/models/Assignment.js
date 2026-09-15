@@ -31,8 +31,7 @@ const assignmentSchema = new mongoose.Schema(
     dueDate: {
       type: Date,
     },
-    // Students this assignment is given to. Soft reference to Member 1's
-    // Student model (ObjectId only — model does not need to exist to store this).
+    // Students this assignment is given to (Member 1's Student._id).
     assignedTo: {
       type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Student' }],
       required: true,
@@ -46,9 +45,11 @@ const assignmentSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'LearningContent',
     },
+    // The educator (User) who created this assignment — see the identical
+    // note in models/LearningContent.js on why this is ref: 'User', not 'Educator'.
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Educator',
+      ref: 'User',
       required: true,
     },
     // Set true for assignments produced by the AI Educator Assistant.

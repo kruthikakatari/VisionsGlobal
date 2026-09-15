@@ -17,19 +17,22 @@ export async function createSubmission(req, res) {
       return res.status(404).json({ message: 'Assignment not found' });
     }
 
-    const isAssigned = assignment.assignedTo.some((id) => String(id) === req.user.id);
+    // assignedTo/Submission.student reference Student._id, not the student's
+    // User._id — req.user.studentProfile is the link (see models/User.js).
+    const studentProfileId = req.user.studentProfile ? String(req.user.studentProfile) : null;
+    const isAssigned = assignment.assignedTo.some((id) => String(id) === studentProfileId);
     if (!isAssigned) {
       return res.status(403).json({ message: 'This assignment is not assigned to you' });
     }
 
-    const existing = await Submission.findOne({ assignment: assignmentId, student: req.user.id });
+    const existing = await Submission.findOne({ assignment: assignmentId, student: studentProfileId });
     if (existing) {
       return res.status(400).json({ message: 'You have already submitted this assignment' });
     }
 
     const submission = await Submission.create({
       assignment: assignmentId,
-      student: req.user.id,
+      student: studentProfileId,
       responseText,
       answers,
     });

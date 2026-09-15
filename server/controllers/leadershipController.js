@@ -1,17 +1,16 @@
 import Submission from '../models/Submission.js';
-import Assignment from '../models/Assignment.js';
+import Student from '../models/Student.js';
 
 const AT_RISK_THRESHOLD = 50;
 
 // GET /api/leadership/analytics (leadership only)
 //
-// Built entirely from Assignment/Submission data (P3's own tables), since
-// Member 2's Assessment/Progress models (real assessment-based learning
-// gaps, official performance scores) live on an unmerged branch. This is
-// a reasonable proxy, not a duplicate of their scoring logic:
-//   - totalStudents: distinct students who appear in assignedTo — only
-//     students with at least one assignment are counted (no Student
-//     collection to query directly yet)
+// totalStudents and student names now come from Member 1's real Student
+// model (merged in this integration pass). Performance/gap figures are
+// still built entirely from Assignment/Submission data (P3's own tables),
+// since Member 2's Assessment/Progress models (real assessment-based
+// learning gaps, official performance scores) live on an unmerged branch —
+// this is a reasonable proxy, not a duplicate of their scoring logic:
 //   - "improving": first-half vs second-half average grade per student,
 //     a simple trend heuristic — not P2's real progress analysis
 //   - "learning gaps": topics where a student scored below the at-risk
@@ -19,16 +18,12 @@ const AT_RISK_THRESHOLD = 50;
 //     gap detection
 export async function getAnalytics(req, res) {
   try {
-    const [submissions, assignments] = await Promise.all([
+    const [submissions, totalStudents] = await Promise.all([
       Submission.find({ grade: { $ne: null } })
         .sort({ submittedAt: 1 })
         .populate('assignment', 'topic subject title'),
-      Assignment.find().select('assignedTo'),
+      Student.countDocuments(),
     ]);
-
-    const studentIds = new Set();
-    assignments.forEach((a) => a.assignedTo.forEach((id) => studentIds.add(String(id))));
-    const totalStudents = studentIds.size;
 
     const byStudent = new Map();
     for (const s of submissions) {
@@ -77,6 +72,14 @@ export async function getAnalytics(req, res) {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
       .map(([topic, studentCount]) => ({ topic, studentCount }));
+
+    const supportStudentRecords = await Student.find({
+      _id: { $in: studentsRequiringSupport.map((s) => s.studentId) },
+    }).select('personal.name');
+    const nameById = new Map(supportStudentRecords.map((s) => [String(s._id), s.personal?.name]));
+    studentsRequiringSupport.forEach((s) => {
+      s.studentName = nameById.get(s.studentId) || null;
+    });
 
     res.json({
       totalStudents,

@@ -4,8 +4,8 @@ import { saveToken } from '../../api/client.js';
 import './auth.css';
 
 // TEMPORARY — see server/controllers/studentAuthController.js for why this
-// exists (Member 1's real auth has no student role/credential yet). Once
-// they add one, replace this with their login screen.
+// exists (Member 1's real User/Student models have no student credential
+// yet). Once they add one, replace this with their login screen.
 function StudentLoginForm({ onLoggedIn }) {
   const [studentId, setStudentId] = useState('');
   const [error, setError] = useState('');
@@ -16,9 +16,11 @@ function StudentLoginForm({ onLoggedIn }) {
     setError('');
     setLoading(true);
     try {
-      const { token, user } = await studentLogin(studentId);
-      saveToken(token);
-      localStorage.setItem('vl_user', JSON.stringify(user));
+      const res = await studentLogin(studentId);
+      saveToken(res.token);
+      if (res.data?.user) {
+        localStorage.setItem('vl_user', JSON.stringify(res.data.user));
+      }
       onLoggedIn?.();
     } catch (err) {
       setError(err.message);
@@ -41,8 +43,8 @@ function StudentLoginForm({ onLoggedIn }) {
           />
         </label>
         <small>
-          Temporary: educator/parent login uses Member 1's real login screen once merged. This is a
-          stand-in just for students, who don't have accounts in the current system yet.
+          Temporary: educator/parent/leadership login uses Member 1's real email+password screen. This
+          is a stand-in just for students, who don't have credentials in the system yet.
         </small>
         {error && <p className="student-login-error">{error}</p>}
         <button type="submit" disabled={loading}>

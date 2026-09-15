@@ -4,8 +4,6 @@ import { createAssignment } from './api.js';
 
 const initialForm = {
   studentId: '',
-  grade: '',
-  language: '',
   difficulty: 'Medium',
   learningGaps: '',
 };
@@ -37,8 +35,6 @@ function AiAssistant({ onAssigned }) {
 
       const res = await generateAiAssignment({
         studentId: form.studentId,
-        grade: form.grade,
-        language: form.language,
         difficulty: form.difficulty,
         learningGaps,
       });
@@ -79,8 +75,9 @@ function AiAssistant({ onAssigned }) {
     <div className="ai-assistant">
       <h3>AI Educator Assistant</h3>
       <p className="assignment-item-meta">
-        Generates a personalized assignment from the student's grade, language, learning gaps and what
-        they've previously learned (pulled automatically from their assignment history).
+        Generates a personalized assignment from the student's grade and preferred language (pulled from
+        their Student profile), learning gaps, and what they've previously learned (pulled automatically
+        from their assignment history).
       </p>
 
       <form className="ai-assistant-form" onSubmit={handleGenerate}>
@@ -92,22 +89,6 @@ function AiAssistant({ onAssigned }) {
             onChange={handleChange}
             required
             placeholder="650000000000000000000002"
-          />
-        </label>
-
-        <label>
-          Grade
-          <input name="grade" value={form.grade} onChange={handleChange} required placeholder="e.g. 5" />
-        </label>
-
-        <label>
-          Language
-          <input
-            name="language"
-            value={form.language}
-            onChange={handleChange}
-            required
-            placeholder="e.g. English"
           />
         </label>
 

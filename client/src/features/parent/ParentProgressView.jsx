@@ -45,6 +45,13 @@ function ParentProgressView() {
 
       {progress && (
         <div className="parent-progress">
+          {progress.studentName && (
+            <h3 className="parent-student-name">
+              {progress.studentName}
+              {progress.grade ? ` · Grade ${progress.grade}` : ''}
+            </h3>
+          )}
+
           <section className="parent-section">
             <h4>Assignment Completion</h4>
             <p>

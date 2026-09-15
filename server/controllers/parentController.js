@@ -1,22 +1,30 @@
 import mongoose from 'mongoose';
 import Assignment from '../models/Assignment.js';
 import Submission from '../models/Submission.js';
+import Student from '../models/Student.js';
 
 const SUPPORT_GRADE_THRESHOLD = 50;
 
 // GET /api/parent/student-progress?studentId=...
 //
-// Built only from data P3 owns (Assignment/Submission) since Member 2's
-// Assessment/Progress models (overall performance, assessment-based learning
-// gaps) live on an unmerged branch and can't be imported here. Once that
-// branch merges, this is the place to add an "assessments" section rather
-// than reimplementing P2's scoring logic.
+// Assignment completion/topics/support flags are built from data P3 owns
+// (Assignment/Submission). Member 2's Assessment/Progress models (overall
+// performance, assessment-based learning gaps) live on an unmerged branch
+// and can't be imported here yet — once that branch merges, this is the
+// place to add an "assessments" section rather than reimplementing P2's
+// scoring logic. Student name/grade now come from Member 1's real Student
+// model (merged in this integration pass).
 export async function getStudentProgress(req, res) {
   try {
     const { studentId } = req.query;
 
     if (!studentId || !mongoose.Types.ObjectId.isValid(studentId)) {
       return res.status(400).json({ message: 'A valid studentId query parameter is required' });
+    }
+
+    const student = await Student.findById(studentId).select('personal');
+    if (!student) {
+      return res.status(404).json({ message: 'No student found with that id' });
     }
 
     const assignments = await Assignment.find({ assignedTo: studentId }).select('title subject topic');
@@ -48,6 +56,8 @@ export async function getStudentProgress(req, res) {
 
     res.json({
       studentId,
+      studentName: student.personal?.name,
+      grade: student.personal?.grade,
       assignmentCompletion: { total, completed, pending, averageGrade },
       recentTopics,
       needsSupport,

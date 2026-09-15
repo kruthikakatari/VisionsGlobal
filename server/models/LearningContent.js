@@ -31,12 +31,13 @@ const learningContentSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Content/material is required'],
     },
-    // References the educator (Member 1's Educator/User model) who created this
-    // content. Soft reference — the Educator model does not need to exist yet
-    // for this to work; it's only resolved if something calls .populate('createdBy').
+    // The educator (User) who created this content. controllers/contentController.js
+    // sets this from req.user.id (the real User._id, not Member 1's separate
+    // Educator._id — Educator.user links to User, they're different ids),
+    // so ref: 'User' is what actually resolves correctly on populate.
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Educator',
+      ref: 'User',
       required: true,
     },
   },

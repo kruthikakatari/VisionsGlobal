@@ -48,7 +48,7 @@ function LeadershipAnalyticsView() {
           <ul>
             {data.studentsRequiringSupport.map((s) => (
               <li key={s.studentId}>
-                {s.studentId} — average grade {s.averageGrade}
+                {s.studentName || s.studentId} — average grade {s.averageGrade}
               </li>
             ))}
           </ul>
