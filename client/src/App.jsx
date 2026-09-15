@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Wifi, WifiOff, Loader2, CalendarDays, Clock, FileText, Users, ArrowLeft } from 'lucide-react';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Wifi, WifiOff, Loader2, CalendarDays, Clock, FileText, Users, ArrowLeft, LogOut } from 'lucide-react';
 
 import StudentList      from './features/students/StudentList';
 import StudentProfile   from './features/students/StudentProfile';
@@ -10,7 +10,7 @@ import AssignedStudents from './features/educators/AssignedStudents';
 import SessionLogger    from './features/educators/SessionLogger';
 import { AssessmentPage } from './pages/AssessmentPage.jsx';
 
-import { ensureAuth, getCurrentUser } from './api/auth';
+import { ensureAuth, getCurrentUser, logout } from './api/auth';
 import * as studentApi from './api/student';
 import * as educatorApi from './api/educator';
 
@@ -22,6 +22,7 @@ import EducatorDashboard from './pages/EducatorDashboard.jsx';
 import ParentDashboard from './pages/ParentDashboard.jsx';
 import LeadershipDashboard from './pages/LeadershipDashboard.jsx';
 import { StudentLoginForm, LoginForm } from './features/auth/index.js';
+import RoleRoute, { ROLE_HOME } from './components/RoleRoute.jsx';
 
 // Fallback demo students if offline
 const FALLBACK_STUDENTS = [
@@ -41,18 +42,37 @@ const FALLBACK_STUDENTS = [
   }
 ];
 
+// Only the links relevant to the signed-in role — an educator never sees
+// "Leadership", a student never sees "Students", etc. Backend RBAC was
+// already the real security boundary; this just stops the nav from
+// advertising routes a role has no reason to click (and previously got a
+// 403 for).
+const NAV_LINKS_BY_ROLE = {
+  educator: [
+    { to: '/students', label: 'Students' },
+    { to: '/educator', label: 'Educator' },
+    { to: '/assessments', label: 'Assessments' },
+    { to: '/dashboard', label: 'Content & Assignments' },
+  ],
+  leadership: [
+    { to: '/students', label: 'Students' },
+    { to: '/leadership', label: 'Leadership' },
+  ],
+  parent: [{ to: '/parent', label: 'Parent' }],
+  student: [{ to: '/dashboard', label: 'My Assignments' }],
+};
+
 function NavBar({ isOffline }) {
   const loc = useLocation();
-  const links = [
-    { to: '/',              label: 'Students' },
-    { to: '/educator',      label: 'Educator' },
-    { to: '/assessments',   label: 'Assessments' },
-    { to: '/dashboard',     label: 'Content & Assignments' },
-    { to: '/parent',        label: 'Parent' },
-    { to: '/leadership',    label: 'Leadership' },
-    { to: '/student-login', label: 'Student / Parent Login' },
-    { to: '/login',         label: 'Educator / Leadership Login' },
-  ];
+  const navigate = useNavigate();
+  const user = getCurrentUser();
+  const links = user ? NAV_LINKS_BY_ROLE[user.role] || [] : [];
+
+  function handleLogout() {
+    logout();
+    navigate('/welcome');
+  }
+
   return (
     <header className="sticky top-0 z-20 bg-indigo-700 text-white shadow-lg">
       <div className="max-w-4xl mx-auto flex items-center justify-between px-4 py-3">
@@ -68,7 +88,7 @@ function NavBar({ isOffline }) {
             </span>
           )}
         </div>
-        <nav className="flex gap-1 flex-wrap justify-end">
+        <nav className="flex gap-1 flex-wrap justify-end items-center">
           {links.map(({ to, label }) => (
             <Link
               key={to}
@@ -82,6 +102,39 @@ function NavBar({ isOffline }) {
               {label}
             </Link>
           ))}
+
+          {user ? (
+            <>
+              <span className="text-xs text-indigo-200 px-2">
+                {user.name} · {user.role}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-medium text-indigo-200 hover:bg-indigo-600 transition-colors"
+              >
+                <LogOut className="w-3.5 h-3.5" /> Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/student-login"
+                className={`px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+                  loc.pathname === '/student-login' ? 'bg-white text-indigo-700' : 'text-indigo-200 hover:bg-indigo-600'
+                }`}
+              >
+                Student / Parent Login
+              </Link>
+              <Link
+                to="/login"
+                className={`px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+                  loc.pathname === '/login' ? 'bg-white text-indigo-700' : 'text-indigo-200 hover:bg-indigo-600'
+                }`}
+              >
+                Educator / Leadership Login
+              </Link>
+            </>
+          )}
         </nav>
       </div>
     </header>
@@ -378,34 +431,12 @@ function EducatorPage({ isOffline, setIsOffline }) {
 // ── Member 3's routes ────────────────────────────────────────────────────────
 // /dashboard hosts Content Library + Assignments + AI Assistant in one page
 // (EducatorDashboard.jsx); its children already branch their UI by role
-// (educator vs student) internally, same pattern as StudentsPage/EducatorPage
-// above, so it just needs a session to exist. ensureAuth() auto-provisions
-// the demo educator if nothing is logged in yet, but leaves an existing
-// session (e.g. a student who used /student-login) untouched.
+// (educator vs student) internally. RoleRoute already guarantees a session
+// exists before this renders, so no loading/ensureAuth wrapper is needed here.
 function DashboardRoute() {
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    ensureAuth().finally(() => setLoading(false));
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-28 text-gray-500 gap-3">
-        <Loader2 className="w-10 h-10 animate-spin text-indigo-600" />
-        <p className="text-base font-medium">Loading dashboard…</p>
-      </div>
-    );
-  }
-
   return <EducatorDashboard />;
 }
 
-// /parent and /leadership deliberately do NOT call ensureAuth(): there's no
-// real parent/leadership login screen yet (only the demo educator is
-// auto-provisioned), so auto-logging in as an educator here would be wrong.
-// Visiting these routes without a parent/leadership session shows the
-// backend's 401/403 message via each page's existing error handling.
 function StudentLoginPage() {
   const navigate = useNavigate();
   return (
@@ -413,6 +444,41 @@ function StudentLoginPage() {
       onLoggedIn={(user) => navigate(user?.role === 'parent' ? '/parent' : '/dashboard')}
     />
   );
+}
+
+// Landing page for anyone not logged in (or just logged out) — replaces the
+// old behavior where visiting any protected route silently auto-logged you
+// in as a demo educator. Real role-based access means an actual login now.
+function WelcomePage() {
+  return (
+    <div className="max-w-md mx-auto px-4 py-16 flex flex-col items-center gap-6 text-center">
+      <span className="text-5xl">🎓</span>
+      <h1 className="text-2xl font-bold text-gray-900">Welcome to Visions Learn</h1>
+      <p className="text-gray-500">Choose how you'd like to log in.</p>
+      <div className="flex flex-col gap-3 w-full">
+        <Link
+          to="/student-login"
+          className="w-full py-3 rounded-2xl bg-indigo-700 text-white font-semibold hover:bg-indigo-800 transition-colors"
+        >
+          Student / Parent Login
+        </Link>
+        <Link
+          to="/login"
+          className="w-full py-3 rounded-2xl border-2 border-indigo-700 text-indigo-700 font-semibold hover:bg-indigo-50 transition-colors"
+        >
+          Educator / Leadership Login
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// "/" is a smart redirect rather than a page of its own: logged in -> your
+// own home; not logged in -> the login chooser.
+function RootRedirect() {
+  const user = getCurrentUser();
+  if (!user) return <Navigate to="/welcome" replace />;
+  return <Navigate to={ROLE_HOME[user.role] || '/welcome'} replace />;
 }
 
 // ── Root App ─────────────────────────────────────────────────────────────────
@@ -425,14 +491,60 @@ export default function App() {
         <NavBar isOffline={isOffline} />
         <main className="flex-1 py-4">
           <Routes>
-            <Route path="/"              element={<StudentsPage  isOffline={isOffline} setIsOffline={setIsOffline} />} />
-            <Route path="/educator"      element={<EducatorPage  isOffline={isOffline} setIsOffline={setIsOffline} />} />
-            <Route path="/assessments"   element={<AssessmentPage />} />
-            <Route path="/dashboard"     element={<DashboardRoute />} />
-            <Route path="/parent"        element={<ParentDashboard />} />
-            <Route path="/leadership"    element={<LeadershipDashboard />} />
+            <Route path="/" element={<RootRedirect />} />
+            <Route path="/welcome" element={<WelcomePage />} />
+
+            <Route
+              path="/students"
+              element={
+                <RoleRoute roles={['educator', 'leadership']}>
+                  <StudentsPage isOffline={isOffline} setIsOffline={setIsOffline} />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="/educator"
+              element={
+                <RoleRoute roles={['educator']}>
+                  <EducatorPage isOffline={isOffline} setIsOffline={setIsOffline} />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="/assessments"
+              element={
+                <RoleRoute roles={['educator']}>
+                  <AssessmentPage />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="/dashboard"
+              element={
+                <RoleRoute roles={['educator', 'student']}>
+                  <DashboardRoute />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="/parent"
+              element={
+                <RoleRoute roles={['parent']}>
+                  <ParentDashboard />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="/leadership"
+              element={
+                <RoleRoute roles={['leadership']}>
+                  <LeadershipDashboard />
+                </RoleRoute>
+              }
+            />
+
             <Route path="/student-login" element={<StudentLoginPage />} />
-            <Route path="/login"         element={<LoginForm />} />
+            <Route path="/login" element={<LoginForm />} />
           </Routes>
         </main>
       </div>
