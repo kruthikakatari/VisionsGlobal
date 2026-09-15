@@ -1,4 +1,5 @@
 import { ContentLibrary } from '../features/content/index.js';
+import { AssignmentBoard } from '../features/assignments/index.js';
 
 function EducatorDashboard() {
   return (
@@ -10,7 +11,12 @@ function EducatorDashboard() {
         <ContentLibrary />
       </section>
 
-      {/* Assignments and AI Assistant sections will be added in later phases */}
+      <section>
+        <h3>Assignments</h3>
+        <AssignmentBoard />
+      </section>
+
+      {/* AI Assistant section will be added in Phase 5 */}
     </div>
   );
 }

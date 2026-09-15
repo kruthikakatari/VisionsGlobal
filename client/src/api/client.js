@@ -27,3 +27,18 @@ export async function apiRequest(path, { method = 'GET', body, headers = {} } = 
 
   return data;
 }
+
+// Reads { id, role } out of the JWT payload so the UI can decide what to show
+// (e.g. only educators see "create assignment"). No server round-trip needed —
+// this is purely for UI branching, the backend still enforces access on every request.
+export function getCurrentUser() {
+  const token = getToken();
+  if (!token) return null;
+
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return { id: payload.id, role: payload.role };
+  } catch {
+    return null;
+  }
+}
