@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import {
   User, BookOpen, Users, MapPin,
   ChevronDown, ChevronUp, Save,
-  CheckCircle2, Loader2, WifiOff, AlertTriangle,
+  CheckCircle2, Loader2, WifiOff, AlertTriangle, Copy,
 } from 'lucide-react';
+import '../../features/auth/auth.css';
 
 // ─── i18n stub ───────────────────────────────────────────────────────────────
 const t = {
@@ -197,6 +198,7 @@ const EMPTY_FORM = {
     familyIncomeRange: '', numberOfFamilyMembers: '', educationBackground: '', otherSupportFactors: '',
   },
   location:       { district: '', cluster: '', villageArea: '' },
+  parentPassword: '', // set by educator; used for parent portal login
 };
 
 export default function AddEditStudent({ student = null, onSave, onCancel }) {
@@ -210,11 +212,14 @@ export default function AddEditStudent({ student = null, onSave, onCancel }) {
           academic:         { ...EMPTY_FORM.academic,         ...student.academic },
           familyBackground: { ...EMPTY_FORM.familyBackground, ...student.familyBackground },
           location:         { ...EMPTY_FORM.location,         ...student.location },
+          parentPassword:   '',
         }
       : EMPTY_FORM
   );
 
-  const [saveState, setSaveState] = useState(SAVE_IDLE);
+  const [saveState, setSaveState]     = useState(SAVE_IDLE);
+  // Credential card shown after a successful student registration
+  const [credentials, setCredentials] = useState(null);
 
   // Helper to update a nested field
   const set = (group, key) => (val) => setForm((prev) => mergeGroup(prev, group, key, val));
@@ -227,9 +232,13 @@ export default function AddEditStudent({ student = null, onSave, onCancel }) {
     const timeoutId = setTimeout(() => setSaveState(SAVE_OFFLINE), SYNC_TIMEOUT_MS);
 
     try {
-      await onSave?.(form);
+      const result = await onSave?.(form);
       clearTimeout(timeoutId);
       setSaveState(SAVE_SUCCESS);
+      // Show credential card if the server returned credentials (new student only)
+      if (result?.credentials) {
+        setCredentials(result.credentials);
+      }
     } catch (_) {
       clearTimeout(timeoutId);
       // Network error – treat as offline save
@@ -266,7 +275,7 @@ export default function AddEditStudent({ student = null, onSave, onCancel }) {
       </div>
 
       {/* ── Save-state Banner ── */}
-      {saveState === SAVE_SUCCESS && (
+      {saveState === SAVE_SUCCESS && !credentials && (
         <div className="flex items-center gap-2 rounded-xl bg-green-50 border border-green-300 px-4 py-3 text-sm text-green-800">
           <CheckCircle2 className="w-4 h-4 shrink-0" />
           {t.savedOnline}
@@ -276,6 +285,36 @@ export default function AddEditStudent({ student = null, onSave, onCancel }) {
         <div className="flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-300 px-4 py-3 text-sm text-amber-800">
           <WifiOff className="w-4 h-4 shrink-0" />
           {t.savedOffline}
+        </div>
+      )}
+
+      {/* ── Credential Card ── shown after successful new student registration */}
+      {credentials && (
+        <div className="credential-card">
+          <p className="credential-card__title"><CheckCircle2 className="w-5 h-5" /> Student Registered Successfully!</p>
+          <p className="credential-card__subtitle">Share these credentials with the student and parent. Save them now — passwords are not shown again.</p>
+
+          {[['Student ID', credentials.studentId], ['Student Password', credentials.studentPassword], credentials.parentPassword && ['Parent Password', credentials.parentPassword]].filter(Boolean).map(([key, val]) => (
+            <div key={key} className="credential-card__row">
+              <span className="credential-card__key">{key}</span>
+              <span className="credential-card__val">{val}</span>
+              <button
+                type="button"
+                className="credential-card__copy"
+                onClick={() => navigator.clipboard.writeText(val)}
+              >Copy</button>
+            </div>
+          ))}
+
+          <p className="credential-card__warn">⚠️ This is the only time these credentials are shown in plain text. Store them safely before navigating away.</p>
+          <button
+            type="button"
+            id="done-credentials-btn"
+            onClick={onCancel}
+            className="w-full mt-3 py-3 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition cursor-pointer"
+          >
+            Done &amp; Return to List
+          </button>
         </div>
       )}
 
@@ -313,6 +352,25 @@ export default function AddEditStudent({ student = null, onSave, onCancel }) {
           <NumberInput id="f-members"     label={t.familyMembers}   value={form.familyBackground.numberOfFamilyMembers}onChange={set('familyBackground','numberOfFamilyMembers')} />
           <TextInput   id="f-education"   label={t.educationBg}     value={form.familyBackground.educationBackground}  onChange={set('familyBackground','educationBackground')}  placeholder={t.educationBgPh} />
           <TextInput   id="f-support"     label={t.otherSupport}    value={form.familyBackground.otherSupportFactors}  onChange={set('familyBackground','otherSupportFactors')}  placeholder={t.otherSupportPh} fullWidth />
+
+          {/* Parent portal password — educator sets this so the parent can log in */}
+          {!isEdit && (
+            <div className="sm:col-span-2 flex flex-col gap-1">
+              <label htmlFor="f-parent-pw" className="text-sm font-medium text-gray-700">
+                Parent Portal Password <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="f-parent-pw"
+                type="text"
+                value={form.parentPassword}
+                onChange={(e) => setForm((prev) => ({ ...prev, parentPassword: e.target.value }))}
+                placeholder="e.g. Kumar@2024"
+                required={!isEdit}
+                className="w-full px-4 py-3 rounded-xl border border-amber-300 bg-amber-50 text-base focus:outline-none focus:ring-2 focus:ring-amber-400 min-h-[52px]"
+              />
+              <span className="text-xs text-amber-700">Share this with the parent so they can log in to the Parent Portal.</span>
+            </div>
+          )}
         </Section>
 
         {/* ── 4. Location ── */}
