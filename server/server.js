@@ -8,6 +8,9 @@ import authRoutes from './routes/authRoutes.js';
 import studentRoutes from './routes/studentRoutes.js';
 import educatorRoutes from './routes/educatorRoutes.js';
 
+// Member 2 (Assessment, Progress, learning gaps, recommendations, Sarvam)
+import assessmentRoutes from './routes/assessmentRoutes.js';
+
 // Member 3 (Content, Assignments, AI Assistant, Parent, Leadership, student login)
 import contentRoutes from './routes/contentRoutes.js';
 import assignmentRoutes from './routes/assignmentRoutes.js';
@@ -33,6 +36,9 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/educators', educatorRoutes);
+
+// Member 2's routes
+app.use('/api', assessmentRoutes);
 
 // Member 3's routes. studentAuthRoutes shares the /api/auth prefix with
 // authRoutes above (adds POST /student-login alongside their /login and
