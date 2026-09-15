@@ -106,21 +106,35 @@ function StudentsPage({ isOffline, setIsOffline }) {
     fetchStudents();
   }, [fetchStudents]);
 
+  // Sanitize form data: coerce numeric string fields to Number before sending to API
+  const sanitizeStudentData = (formData) => ({
+    ...formData,
+    personal: {
+      ...formData.personal,
+      age: formData.personal.age !== '' ? Number(formData.personal.age) : undefined,
+    },
+    familyBackground: {
+      ...formData.familyBackground,
+      numberOfFamilyMembers:
+        formData.familyBackground.numberOfFamilyMembers !== ''
+          ? Number(formData.familyBackground.numberOfFamilyMembers)
+          : undefined,
+    },
+  });
+
   const handleSaveNew = async (formData) => {
     try {
       await ensureAuth();
-      const created = await studentApi.createStudent(formData);
+      const sanitized = sanitizeStudentData(formData);
+      const created = await studentApi.createStudent(sanitized);
       if (created) {
         setStudents((prev) => [created, ...prev]);
       }
       setIsOffline(false);
       setView('list');
     } catch (err) {
-      console.warn('Network error saving student, saving locally:', err);
-      setIsOffline(true);
-      const mockCreated = { ...formData, _id: 'local-' + Date.now() };
-      setStudents((prev) => [mockCreated, ...prev]);
-      setView('list');
+      console.error('Failed to save student to DB:', err);
+      alert(`Failed to save student: ${err.message}`);
     }
   };
 
