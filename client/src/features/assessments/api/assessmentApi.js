@@ -11,10 +11,11 @@ const getHeaders = (isMultipart = false) => {
     headers['Content-Type'] = 'application/json';
   }
 
-  const token =
-    typeof localStorage !== 'undefined'
-      ? localStorage.getItem('token') || localStorage.getItem('jwt')
-      : null;
+  // 'vl_token' is the actual key the app's real login writes (see
+  // client/src/api/apiClient.js) — this previously read 'token'/'jwt',
+  // which nothing in the app ever set, so every assessment request went
+  // out unauthenticated regardless of whether you were logged in.
+  const token = typeof localStorage !== 'undefined' ? localStorage.getItem('vl_token') : null;
 
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
