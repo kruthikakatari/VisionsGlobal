@@ -1,12 +1,15 @@
 /**
  * Assessment API Client for Person 2 Module
- * Handles all backend communication for assessments, progress, history, and recommendations.
+ * Handles backend communication for assessments, progress, history, recommendations,
+ * and Sarvam translation / voice transcription enhancements.
  */
 
-const getHeaders = () => {
-  const headers = {
-    'Content-Type': 'application/json',
-  };
+const getHeaders = (isMultipart = false) => {
+  const headers = {};
+
+  if (!isMultipart) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   const token =
     typeof localStorage !== 'undefined'
@@ -79,7 +82,7 @@ export const getStudentAssessmentsApi = async (studentId) => {
 };
 
 /**
- * Fetches recommendations for a student (gracefully handles 404 if not yet enabled)
+ * Fetches recommendations for a student
  * GET /api/students/:id/recommendations
  */
 export const getStudentRecommendationsApi = async (studentId) => {
@@ -103,4 +106,52 @@ export const getStudentRecommendationsApi = async (studentId) => {
   } catch {
     return { status: 'not_available', data: null };
   }
+};
+
+/**
+ * Translates assessment text using Sarvam backend service
+ * POST /api/assessments/translate
+ */
+export const translateAssessmentTextApi = async ({ text, sourceLanguage = 'English', targetLanguage = 'Tamil' }) => {
+  const response = await fetch('/api/assessments/translate', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({
+      text,
+      sourceLanguage,
+      targetLanguage,
+    }),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.message || `Translation failed (HTTP ${response.status})`);
+  }
+
+  return data;
+};
+
+/**
+ * Transcribes audio blob using Sarvam backend speech-to-text service
+ * POST /api/assessments/speech-to-text
+ */
+export const transcribeAssessmentVoiceApi = async (audioBlob, languageCode = 'Tamil') => {
+  const formData = new FormData();
+  formData.append('file', audioBlob, 'voice_answer.wav');
+  formData.append('languageCode', languageCode);
+
+  const response = await fetch('/api/assessments/speech-to-text', {
+    method: 'POST',
+    headers: getHeaders(true),
+    body: formData,
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.message || `Speech-to-text transcription failed (HTTP ${response.status})`);
+  }
+
+  return data;
 };

@@ -3,6 +3,8 @@ import { AssessmentForm } from './components/AssessmentForm.jsx';
 import { AssessmentResult } from './components/AssessmentResult.jsx';
 import { RecommendationsList } from './components/RecommendationsList.jsx';
 import { AssessmentHistory } from './components/AssessmentHistory.jsx';
+import { TranslationAssistant } from './components/TranslationAssistant.jsx';
+import { VoiceAnswerRecorder } from './components/VoiceAnswerRecorder.jsx';
 import {
   createAssessmentApi,
   getStudentProgressApi,
@@ -13,10 +15,12 @@ import './assessments.css';
 
 export const AssessmentDashboard = () => {
   const [activeStudentId, setActiveStudentId] = useState('');
+  const [selectedLanguage, setSelectedLanguage] = useState('Tamil');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingProgress, setIsLoadingProgress] = useState(false);
   const [isLoadingRecs, setIsLoadingRecs] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [showAccessibilityTools, setShowAccessibilityTools] = useState(false);
 
   const [submittedAssessment, setSubmittedAssessment] = useState(null);
   const [studentProgress, setStudentProgress] = useState(null);
@@ -29,6 +33,7 @@ export const AssessmentDashboard = () => {
     setIsSubmitting(true);
     setApiError('');
     setActiveStudentId(payload.studentId);
+    if (payload.language) setSelectedLanguage(payload.language);
 
     try {
       // 1. Submit Assessment
@@ -47,12 +52,12 @@ export const AssessmentDashboard = () => {
         setIsLoadingProgress(false);
       }
 
-      // 3. Fetch Recommendations (gracefully handles 404)
+      // 3. Fetch Recommendations (live backend endpoint)
       setIsLoadingRecs(true);
       try {
         const recsRes = await getStudentRecommendationsApi(payload.studentId);
         if (recsRes.status === 'success' && recsRes.data) {
-          setRecommendations(recsRes.data.recommendations || recsRes.data);
+          setRecommendations(recsRes.data.recommendations || []);
           setRecsAvailable(true);
         } else {
           setRecommendations(null);
@@ -94,16 +99,39 @@ export const AssessmentDashboard = () => {
   return (
     <div className="assessment-container">
       <header className="assessment-header">
-        <h2>🎯 Assessment & Personalized Learning</h2>
-        <p>
-          Educator module for evaluating student performance, tracking progress, and identifying learning gaps.
-        </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h2>🎯 Assessment & Personalized Learning</h2>
+            <p>
+              Evaluate student competencies, track real-time progress, detect learning gaps, and receive intervention recommendations.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => setShowAccessibilityTools(!showAccessibilityTools)}
+          >
+            {showAccessibilityTools ? 'Hide Accessibility Tools' : '🌐 Sarvam AI Language & Voice Tools'}
+          </button>
+        </div>
       </header>
 
       {apiError && (
         <div className="alert alert-error">
           <span>❌</span>
           <span>{apiError}</span>
+        </div>
+      )}
+
+      {showAccessibilityTools && (
+        <div style={{ marginBottom: '1.5rem', background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
+          <h3 style={{ margin: '0 0 1rem 0', color: '#0f172a', fontSize: '1.15rem' }}>
+            ✨ Sarvam AI Local-Language & Voice Accessibility Enhancements
+          </h3>
+          <div className="assessment-grid">
+            <TranslationAssistant targetLanguage={selectedLanguage} />
+            <VoiceAnswerRecorder language={selectedLanguage} />
+          </div>
         </div>
       )}
 
