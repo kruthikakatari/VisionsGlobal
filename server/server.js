@@ -6,6 +6,7 @@ import contentRoutes from './routes/contentRoutes.js';
 import assignmentRoutes from './routes/assignmentRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
 import parentRoutes from './routes/parentRoutes.js';
+import studentAuthRoutes from './routes/studentAuthRoutes.js';
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ app.use('/api/content', contentRoutes);
 app.use('/api', assignmentRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/parent', parentRoutes);
+app.use('/api/auth', studentAuthRoutes);
 
 connectDB()
   .then(() => {
