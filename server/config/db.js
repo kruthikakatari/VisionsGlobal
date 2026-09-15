@@ -1,12 +1,13 @@
 import mongoose from 'mongoose';
 
 // Shared MongoDB connection used by every model/route in the app.
-// Reads MONGO_URI from .env (see server/.env.example).
+// Reads MONGODB_URI from .env (see server/.env.example) — matches the var
+// name Member 1's server.js/README already use, so both stay compatible.
 export async function connectDB() {
-  const uri = process.env.MONGO_URI;
+  const uri = process.env.MONGODB_URI;
 
   if (!uri) {
-    throw new Error('MONGO_URI is not set. Add it to server/.env (see .env.example).');
+    throw new Error('MONGODB_URI is not set. Add it to server/.env (see .env.example).');
   }
 
   await mongoose.connect(uri);

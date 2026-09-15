@@ -1,43 +1,56 @@
-// ⚠️ TEMPORARY PLACEHOLDER — owned by Member 1 (Student/Educator/User management).
-//
-// Member 1 has not yet pushed the real auth middleware, so this minimal stand-in
-// unblocks P3's routes (content, assignments, AI, parent, leadership) for local
-// development/testing. It implements the JWT contract the team already agreed on:
-//   - a Bearer token in the Authorization header
-//   - a payload containing { id, role }
-//   - req.user = { id, role } set for downstream handlers
-//
-// Named authMiddleware.js (not auth.js) to match the path Member 2's
-// assessmentRoutes.js already expects (`../middleware/authMiddleware.js`),
-// so this is a true drop-in slot regardless of who merges first.
-//
-// When Member 1 pushes the real middleware, DELETE this file and re-point every
-// `import { protect, restrictTo } from '../middleware/authMiddleware.js'` at
-// theirs (same function names/signatures, so it should be a drop-in swap).
 import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
 
-export function protect(req, res, next) {
-  const header = req.headers.authorization || '';
-  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
-
-  if (!token) {
-    return res.status(401).json({ message: 'Not authorized, no token provided' });
-  }
-
+export const protect = async (req, res, next) => {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = { id: decoded.id, role: decoded.role };
-    next();
-  } catch (err) {
-    return res.status(401).json({ message: 'Not authorized, invalid or expired token' });
-  }
-}
+    let token;
+    
+    // 1) Getting token and check if it's there
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith('Bearer')
+    ) {
+      token = req.headers.authorization.split(' ')[1];
+    }
 
-export function restrictTo(...roles) {
+    if (!token) {
+      return res.status(401).json({
+        status: 'fail',
+        message: 'You are not logged in! Please log in to get access.'
+      });
+    }
+
+    // 2) Verification token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // 3) Check if user still exists
+    const currentUser = await User.findById(decoded.id);
+    if (!currentUser) {
+      return res.status(401).json({
+        status: 'fail',
+        message: 'The user belonging to this token does no longer exist.'
+      });
+    }
+
+    // GRANT ACCESS TO PROTECTED ROUTE
+    req.user = currentUser;
+    next();
+  } catch (error) {
+    res.status(401).json({
+      status: 'fail',
+      message: 'Invalid token or token has expired'
+    });
+  }
+};
+
+export const restrictTo = (...roles) => {
   return (req, res, next) => {
-    if (!req.user || !roles.includes(req.user.role)) {
-      return res.status(403).json({ message: 'Forbidden: insufficient role' });
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({
+        status: 'fail',
+        message: 'You do not have permission to perform this action'
+      });
     }
     next();
   };
-}
+};
