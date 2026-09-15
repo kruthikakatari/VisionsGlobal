@@ -8,6 +8,7 @@ import AddEditStudent   from './features/students/AddEditStudent';
 import EducatorProfile  from './features/educators/EducatorProfile';
 import AssignedStudents from './features/educators/AssignedStudents';
 import SessionLogger    from './features/educators/SessionLogger';
+import { AssessmentPage } from './pages/AssessmentPage.jsx';
 
 import { ensureAuth, getCurrentUser } from './api/auth';
 import * as studentApi from './api/student';
@@ -34,12 +35,13 @@ const FALLBACK_STUDENTS = [
 function NavBar({ isOffline }) {
   const loc = useLocation();
   const links = [
-    { to: '/',         label: 'Students' },
-    { to: '/educator', label: 'Educator' },
+    { to: '/',            label: 'Students' },
+    { to: '/educator',    label: 'Educator' },
+    { to: '/assessments', label: 'Assessments' },
   ];
   return (
     <header className="sticky top-0 z-20 bg-indigo-700 text-white shadow-lg">
-      <div className="max-w-3xl mx-auto flex items-center justify-between px-4 py-3">
+      <div className="max-w-4xl mx-auto flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
           <span className="text-lg font-bold tracking-tight">Visions Learn</span>
           {isOffline ? (
@@ -351,8 +353,9 @@ export default function App() {
         <NavBar isOffline={isOffline} />
         <main className="flex-1 py-4">
           <Routes>
-            <Route path="/"         element={<StudentsPage  isOffline={isOffline} setIsOffline={setIsOffline} />} />
-            <Route path="/educator" element={<EducatorPage  isOffline={isOffline} setIsOffline={setIsOffline} />} />
+            <Route path="/"            element={<StudentsPage  isOffline={isOffline} setIsOffline={setIsOffline} />} />
+            <Route path="/educator"    element={<EducatorPage  isOffline={isOffline} setIsOffline={setIsOffline} />} />
+            <Route path="/assessments" element={<AssessmentPage />} />
           </Routes>
         </main>
       </div>
