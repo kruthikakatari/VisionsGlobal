@@ -7,6 +7,7 @@ import assignmentRoutes from './routes/assignmentRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
 import parentRoutes from './routes/parentRoutes.js';
 import studentAuthRoutes from './routes/studentAuthRoutes.js';
+import leadershipRoutes from './routes/leadershipRoutes.js';
 
 dotenv.config();
 
@@ -26,6 +27,7 @@ app.use('/api', assignmentRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/parent', parentRoutes);
 app.use('/api/auth', studentAuthRoutes);
+app.use('/api/leadership', leadershipRoutes);
 
 connectDB()
   .then(() => {
