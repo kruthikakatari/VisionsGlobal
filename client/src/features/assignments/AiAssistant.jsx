@@ -88,7 +88,7 @@ function AiAssistant({ onAssigned }) {
             value={form.studentId}
             onChange={handleChange}
             required
-            placeholder="650000000000000000000002"
+            placeholder="VL-2024-0042"
           />
         </label>
 

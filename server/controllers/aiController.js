@@ -1,6 +1,5 @@
-import mongoose from 'mongoose';
 import Submission from '../models/Submission.js';
-import Student from '../models/Student.js';
+import { resolveStudent } from '../utils/resolveStudent.js';
 import { generateAssignment } from '../services/aiAssignmentService.js';
 
 // "previouslyLearned" is a P3-owned field, and P3 already has the data for
@@ -27,24 +26,24 @@ async function getPreviouslyLearned(studentId) {
 // POST /api/ai/generate-assignment (educator only)
 export async function generateAiAssignment(req, res) {
   try {
-    const { studentId, learningGaps, difficulty } = req.body;
+    const { studentId: studentIdParam, learningGaps, difficulty } = req.body;
 
-    if (!studentId || !mongoose.Types.ObjectId.isValid(studentId)) {
-      return res.status(400).json({ message: 'A valid studentId is required' });
+    if (!studentIdParam) {
+      return res.status(400).json({ message: 'A studentId is required' });
     }
     if (!difficulty) {
       return res.status(400).json({ message: 'difficulty is required' });
     }
 
-    const student = await Student.findById(studentId);
+    const student = await resolveStudent(studentIdParam);
     if (!student) {
       return res.status(404).json({ message: 'No student found with that id' });
     }
 
-    const previouslyLearned = await getPreviouslyLearned(studentId);
+    const previouslyLearned = await getPreviouslyLearned(student._id);
 
     const aiInput = {
-      studentId,
+      studentId: student.studentId || String(student._id),
       previouslyLearned,
       learningGaps: Array.isArray(learningGaps) ? learningGaps : [],
       grade: student.personal?.grade,

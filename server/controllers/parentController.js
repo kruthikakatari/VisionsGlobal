@@ -1,11 +1,14 @@
-import mongoose from 'mongoose';
 import Assignment from '../models/Assignment.js';
 import Submission from '../models/Submission.js';
-import Student from '../models/Student.js';
+import { resolveStudent } from '../utils/resolveStudent.js';
 
 const SUPPORT_GRADE_THRESHOLD = 50;
 
 // GET /api/parent/student-progress?studentId=...
+//
+// studentId accepts either the internal Mongo _id or the human-readable
+// studentId (e.g. "VL-2024-0042") a real parent would actually have — see
+// utils/resolveStudent.js.
 //
 // Assignment completion/topics/support flags are built from data P3 owns
 // (Assignment/Submission). Member 2's Assessment/Progress models (overall
@@ -16,19 +19,29 @@ const SUPPORT_GRADE_THRESHOLD = 50;
 // model (merged in this integration pass).
 export async function getStudentProgress(req, res) {
   try {
-    const { studentId } = req.query;
+    const { studentId: studentIdParam } = req.query;
+    const linkedStudentId = req.user.studentProfile ? String(req.user.studentProfile) : null;
 
-    if (!studentId || !mongoose.Types.ObjectId.isValid(studentId)) {
-      return res.status(400).json({ message: 'A valid studentId query parameter is required' });
+    if (!studentIdParam && !linkedStudentId) {
+      return res.status(400).json({ message: 'A studentId query parameter is required' });
     }
 
-    const student = await Student.findById(studentId).select('personal');
+    const student = await resolveStudent(studentIdParam || linkedStudentId);
     if (!student) {
       return res.status(404).json({ message: 'No student found with that id' });
     }
 
-    const assignments = await Assignment.find({ assignedTo: studentId }).select('title subject topic');
-    const submissions = await Submission.find({ student: studentId })
+    // A parent who logged in via studentId + parent password is linked to
+    // exactly one student (req.user.studentProfile) — reject any attempt to
+    // view a different one. A parent-role account with no linked student
+    // (old email+password flow) isn't restricted, since there's nothing to
+    // check against.
+    if (linkedStudentId && String(student._id) !== linkedStudentId) {
+      return res.status(403).json({ message: 'You can only view your own linked student' });
+    }
+
+    const assignments = await Assignment.find({ assignedTo: student._id }).select('title subject topic');
+    const submissions = await Submission.find({ student: student._id })
       .sort({ submittedAt: -1 })
       .populate('assignment', 'title subject topic');
 
@@ -55,7 +68,7 @@ export async function getStudentProgress(req, res) {
     ];
 
     res.json({
-      studentId,
+      studentId: student.studentId || String(student._id),
       studentName: student.personal?.name,
       grade: student.personal?.grade,
       assignmentCompletion: { total, completed, pending, averageGrade },

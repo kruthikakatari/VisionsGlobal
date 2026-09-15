@@ -1,5 +1,6 @@
 import Assignment from '../models/Assignment.js';
 import Submission from '../models/Submission.js';
+import { resolveStudent } from '../utils/resolveStudent.js';
 
 // GET /api/assignments
 // Educators see assignments they created; students see assignments given to them.
@@ -47,6 +48,16 @@ export async function createAssignment(req, res) {
       });
     }
 
+    // assignedTo entries can be either the internal Mongo _id or the
+    // human-readable studentId (e.g. "VL-2024-0042") — resolve each to a
+    // real Student before saving, since Assignment.assignedTo only stores _ids.
+    const resolvedStudents = await Promise.all(assignedTo.map((id) => resolveStudent(id)));
+    const unknownIndex = resolvedStudents.findIndex((s) => !s);
+    if (unknownIndex !== -1) {
+      return res.status(400).json({ message: `No student found for id "${assignedTo[unknownIndex]}"` });
+    }
+    const assignedToIds = resolvedStudents.map((s) => s._id);
+
     const assignment = await Assignment.create({
       title,
       subject,
@@ -55,7 +66,7 @@ export async function createAssignment(req, res) {
       difficulty,
       language,
       dueDate,
-      assignedTo,
+      assignedTo: assignedToIds,
       sourceContent: sourceContent || undefined,
       questions: hasQuestions ? questions : undefined,
       aiGenerated: Boolean(aiGenerated),

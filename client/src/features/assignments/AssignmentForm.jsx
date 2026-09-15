@@ -95,9 +95,9 @@ function AssignmentForm({ onCreated }) {
           value={form.assignedTo}
           onChange={handleChange}
           required
-          placeholder="650000000000000000000002"
+          placeholder="VL-2024-0042"
         />
-        <small>Temporary manual entry until Member 1 ships a student picker/API.</small>
+        <small>Use the Student ID from the Students page (e.g. VL-2024-0042). Manual entry for now — an inline picker is a nice future improvement.</small>
       </label>
 
       {error && <p className="assignment-error">{error}</p>}

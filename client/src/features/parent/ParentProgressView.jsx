@@ -1,19 +1,22 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getStudentProgress } from './api.js';
+import { getCurrentUser } from '../../api/auth.js';
 import './parent.css';
 
 function ParentProgressView() {
+  const user = getCurrentUser();
+  const linkedStudentId = user?.studentProfile || null;
+
   const [studentId, setStudentId] = useState('');
   const [progress, setProgress] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  async function handleLoad(e) {
-    e.preventDefault();
+  async function load(id) {
     setError('');
     setLoading(true);
     try {
-      const data = await getStudentProgress(studentId);
+      const data = await getStudentProgress(id);
       setProgress(data);
     } catch (err) {
       setError(err.message);
@@ -23,24 +26,43 @@ function ParentProgressView() {
     }
   }
 
+  // A parent who logged in via the real Parent tab (studentId + parent
+  // password) is linked to exactly one student — load it automatically,
+  // no manual entry needed.
+  useEffect(() => {
+    if (linkedStudentId) load(linkedStudentId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linkedStudentId]);
+
+  function handleManualSubmit(e) {
+    e.preventDefault();
+    load(studentId);
+  }
+
   return (
     <div className="parent-progress-view">
-      <form onSubmit={handleLoad} className="parent-student-form">
-        <label>
-          Student ID
-          <input
-            value={studentId}
-            onChange={(e) => setStudentId(e.target.value)}
-            required
-            placeholder="650000000000000000000002"
-          />
-        </label>
-        <small>Temporary manual entry until Member 1's parent-child linking is available.</small>
-        <button type="submit" disabled={loading}>
-          {loading ? 'Loading...' : 'View Progress'}
-        </button>
-      </form>
+      {!linkedStudentId && (
+        <form onSubmit={handleManualSubmit} className="parent-student-form">
+          <label>
+            Student ID
+            <input
+              value={studentId}
+              onChange={(e) => setStudentId(e.target.value)}
+              required
+              placeholder="VL-2024-0042"
+            />
+          </label>
+          <small>
+            This account isn't linked to a specific student (it used the old email+password login).
+            Log in via Student / Parent Login instead to see your child's progress automatically.
+          </small>
+          <button type="submit" disabled={loading}>
+            {loading ? 'Loading...' : 'View Progress'}
+          </button>
+        </form>
+      )}
 
+      {loading && linkedStudentId && <p>Loading...</p>}
       {error && <p className="parent-error">{error}</p>}
 
       {progress && (

@@ -27,7 +27,7 @@ function StudentLoginForm({ onLoggedIn }) {
       if (res.data?.user) {
         localStorage.setItem('vl_user', JSON.stringify(res.data.user));
       }
-      onLoggedIn?.();
+      onLoggedIn?.(res.data?.user);
     } catch (err) {
       setError(err.message || 'Login failed. Please check your credentials.');
     } finally {

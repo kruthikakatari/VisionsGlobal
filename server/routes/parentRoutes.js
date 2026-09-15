@@ -4,9 +4,11 @@ import { protect, restrictTo } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// NOTE: does not yet verify the requesting parent is actually linked to this
-// student — that relationship lives in Member 1's User/Student model, not
-// merged yet. Revisit once it lands (Phase 8 integration).
+// A parent who logged in via the real parent-login (studentId + parent
+// password) has req.user.studentProfile set — the controller enforces that
+// they can only view their own linked student. A parent-role account
+// created the old way (plain email+password, no linked student) falls back
+// to trusting the studentId query param, same as before.
 router.get('/student-progress', protect, restrictTo('parent'), getStudentProgress);
 
 export default router;

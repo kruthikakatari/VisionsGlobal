@@ -408,7 +408,11 @@ function DashboardRoute() {
 // backend's 401/403 message via each page's existing error handling.
 function StudentLoginPage() {
   const navigate = useNavigate();
-  return <StudentLoginForm onLoggedIn={() => navigate('/dashboard')} />;
+  return (
+    <StudentLoginForm
+      onLoggedIn={(user) => navigate(user?.role === 'parent' ? '/parent' : '/dashboard')}
+    />
+  );
 }
 
 // ── Root App ─────────────────────────────────────────────────────────────────
