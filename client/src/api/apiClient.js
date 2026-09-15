@@ -50,6 +50,9 @@ async function request(path, options = {}) {
   }
 
   if (!response.ok) {
+    if (response.status === 401) {
+      clearToken();
+    }
     throw new ApiError(
       data.message || `Request failed with status ${response.status}`,
       response.status
