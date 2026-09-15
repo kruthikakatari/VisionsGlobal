@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import EducatorDashboard from './pages/EducatorDashboard.jsx';
 
 function App() {
   const [backendStatus, setBackendStatus] = useState('Checking backend connection...');
@@ -21,6 +22,13 @@ function App() {
       <div className="status-badge">
         Server status: {backendStatus}
       </div>
+
+      {/*
+        TEMPORARY: rendering EducatorDashboard directly here so the Content
+        Library is reachable for local testing before the team adds real
+        routing/login. Replace with proper role-based routing once that lands.
+      */}
+      <EducatorDashboard />
     </div>
   );
 }
