@@ -50,8 +50,8 @@ function NavBar({ isOffline }) {
     { to: '/dashboard',     label: 'Content & Assignments' },
     { to: '/parent',        label: 'Parent' },
     { to: '/leadership',    label: 'Leadership' },
-    { to: '/student-login', label: 'Student Login' },
-    { to: '/login',         label: 'Login' },
+    { to: '/student-login', label: 'Student / Parent Login' },
+    { to: '/login',         label: 'Educator / Leadership Login' },
   ];
   return (
     <header className="sticky top-0 z-20 bg-indigo-700 text-white shadow-lg">
@@ -140,17 +140,21 @@ function StudentsPage({ isOffline, setIsOffline }) {
     try {
       await ensureAuth();
       const sanitized = sanitizeStudentData(formData);
-      const created = await studentApi.createStudent(sanitized);
-      if (created) {
-        setStudents((prev) => [created, ...prev]);
+      const res = await studentApi.createStudent(sanitized);
+      // res now has { student, credentials } from the updated API
+      if (res?.student) {
+        setStudents((prev) => [res.student, ...prev]);
       }
       setIsOffline(false);
-      setView('list');
+      // Return credentials so AddEditStudent can show the credential card.
+      // We do NOT navigate away yet — the user needs to see/copy the credentials first.
+      return { credentials: res?.credentials || null };
     } catch (err) {
       console.error('Failed to save student to DB:', err);
       alert(`Failed to save student: ${err.message}`);
     }
   };
+
 
   const handleSaveEdit = async (formData) => {
     try {

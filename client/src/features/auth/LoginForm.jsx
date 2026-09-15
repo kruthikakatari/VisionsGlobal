@@ -3,9 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { login } from '../../api/auth.js';
 import './auth.css';
 
-// Real login for educator/parent/leadership accounts — uses Member 1's
-// actual email+password auth (client/src/api/auth.js -> POST /api/auth/login).
-// Students don't have credentials in the system yet; see StudentLoginForm.jsx.
+// Real email+password login — uses Member 1's actual auth (client/src/api/auth.js
+// -> POST /api/auth/login). Primarily for educator/leadership accounts now:
+// students and parents log in via StudentLoginForm's Student ID + password tabs
+// instead (see server/controllers/studentAuthController.js). Kept generic (routes
+// by whatever role comes back) since a parent could still exist as a plain
+// email+password User from before that flow existed.
 function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -32,7 +35,7 @@ function LoginForm() {
 
   return (
     <div className="login-page">
-      <h2>Log In</h2>
+      <h2>Educator / Leadership Login</h2>
       <form onSubmit={handleSubmit} className="login-form">
         <label>
           Email
@@ -41,7 +44,7 @@ function LoginForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            placeholder="suresh.parent@example.com"
+            placeholder="priya.educator@visionslearn.org"
           />
         </label>
 
@@ -56,7 +59,7 @@ function LoginForm() {
           />
         </label>
 
-        {error && <p className="student-login-error">{error}</p>}
+        {error && <p className="auth-error">{error}</p>}
 
         <button type="submit" disabled={loading}>
           {loading ? 'Logging in...' : 'Log In'}

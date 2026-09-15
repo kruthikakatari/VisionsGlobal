@@ -1,54 +1,121 @@
 import { useState } from 'react';
-import { studentLogin } from './api.js';
+import { studentLogin, parentLogin } from './api.js';
 import { saveToken } from '../../api/client.js';
 import './auth.css';
 
-// TEMPORARY — see server/controllers/studentAuthController.js for why this
-// exists (Member 1's real User/Student models have no student credential
-// yet). Once they add one, replace this with their login screen.
+/**
+ * StudentLoginForm
+ * Tabbed login UI for Students and Parents.
+ * Both log in with a human-readable Student ID (e.g. VL-2024-0042) + password.
+ * No MongoDB ObjectIds are ever exposed to users.
+ */
 function StudentLoginForm({ onLoggedIn }) {
+  const [tab, setTab]           = useState('student'); // 'student' | 'parent'
   const [studentId, setStudentId] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [password, setPassword]   = useState('');
+  const [error, setError]         = useState('');
+  const [loading, setLoading]     = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      const res = await studentLogin(studentId);
+      const loginFn = tab === 'student' ? studentLogin : parentLogin;
+      const res = await loginFn(studentId.trim(), password);
       saveToken(res.token);
       if (res.data?.user) {
         localStorage.setItem('vl_user', JSON.stringify(res.data.user));
       }
       onLoggedIn?.();
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
   }
 
+  const isStudent = tab === 'student';
+
   return (
-    <div className="student-login">
-      <h2>Student Login</h2>
-      <form onSubmit={handleSubmit} className="student-login-form">
-        <label>
-          Student ID
+    <div className="auth-card">
+      {/* Header */}
+      <div className="auth-header">
+        <div className="auth-logo">🎓</div>
+        <h1 className="auth-title">Visions Learn</h1>
+        <p className="auth-subtitle">
+          {isStudent ? 'Student Portal' : 'Parent Portal'}
+        </p>
+      </div>
+
+      {/* Tab switcher */}
+      <div className="auth-tabs">
+        <button
+          type="button"
+          className={`auth-tab ${tab === 'student' ? 'auth-tab--active' : ''}`}
+          onClick={() => { setTab('student'); setError(''); }}
+        >
+          👤 Student
+        </button>
+        <button
+          type="button"
+          className={`auth-tab ${tab === 'parent' ? 'auth-tab--active' : ''}`}
+          onClick={() => { setTab('parent'); setError(''); }}
+        >
+          👨‍👩‍👧 Parent
+        </button>
+      </div>
+
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="auth-form">
+        <div className="auth-field">
+          <label htmlFor="auth-student-id" className="auth-label">
+            Student ID
+          </label>
           <input
+            id="auth-student-id"
+            type="text"
             value={studentId}
             onChange={(e) => setStudentId(e.target.value)}
             required
-            placeholder="650000000000000000000002"
+            placeholder="VL-2024-0042"
+            className="auth-input"
+            autoComplete="username"
           />
-        </label>
-        <small>
-          Temporary: educator/parent/leadership login uses Member 1's real email+password screen. This
-          is a stand-in just for students, who don't have credentials in the system yet.
-        </small>
-        {error && <p className="student-login-error">{error}</p>}
-        <button type="submit" disabled={loading}>
-          {loading ? 'Logging in...' : 'Log In'}
+          <span className="auth-hint">
+            {isStudent
+              ? 'Your Student ID — shared by your educator'
+              : "Your child's Student ID — shared by the educator"}
+          </span>
+        </div>
+
+        <div className="auth-field">
+          <label htmlFor="auth-password" className="auth-label">
+            Password
+          </label>
+          <input
+            id="auth-password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            placeholder={isStudent ? 'e.g. Aarav2026' : 'Parent password'}
+            className="auth-input"
+            autoComplete="current-password"
+          />
+          <span className="auth-hint">
+            {isStudent
+              ? 'Default: your first name + current year'
+              : 'Set by the educator when registering your child'}
+          </span>
+        </div>
+
+        {error && <div className="auth-error">⚠️ {error}</div>}
+
+        <button type="submit" disabled={loading} className="auth-submit">
+          {loading
+            ? <span className="auth-spinner">⏳ Signing in…</span>
+            : `Sign in as ${isStudent ? 'Student' : 'Parent'}`}
         </button>
       </form>
     </div>

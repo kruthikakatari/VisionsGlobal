@@ -1,12 +1,12 @@
 import express from 'express';
-import { studentLogin } from '../controllers/studentAuthController.js';
+import { studentLogin, parentLogin } from '../controllers/studentAuthController.js';
 
 const router = express.Router();
 
-// Mounted at /api/auth in server.js -> POST /api/auth/student-login
-// Deliberately does not collide with Member 1's /api/auth/login and
-// /api/auth/register (those are their real educator/parent auth and are
-// left untouched).
+// Mounted at /api/auth in server.js
+// POST /api/auth/student-login  — student logs in with studentId + password
+// POST /api/auth/parent-login   — parent logs in with studentId + parentPassword
 router.post('/student-login', studentLogin);
+router.post('/parent-login', parentLogin);
 
 export default router;
