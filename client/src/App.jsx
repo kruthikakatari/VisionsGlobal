@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Wifi, WifiOff, Loader2, CalendarDays, Clock, FileText, Users, ArrowLeft } from 'lucide-react';
 
 import StudentList      from './features/students/StudentList';
@@ -13,6 +13,15 @@ import { AssessmentPage } from './pages/AssessmentPage.jsx';
 import { ensureAuth, getCurrentUser } from './api/auth';
 import * as studentApi from './api/student';
 import * as educatorApi from './api/educator';
+
+// Member 3's pages (Content Library, Assignments, AI Assistant, Parent,
+// Leadership) and the temporary student login. These live in their own
+// features/ folders (content, assignments, parent, leadership, auth) which
+// don't overlap with Member 1's features/ folders (students, educators).
+import EducatorDashboard from './pages/EducatorDashboard.jsx';
+import ParentDashboard from './pages/ParentDashboard.jsx';
+import LeadershipDashboard from './pages/LeadershipDashboard.jsx';
+import { StudentLoginForm } from './features/auth/index.js';
 
 // Fallback demo students if offline
 const FALLBACK_STUDENTS = [
@@ -35,9 +44,13 @@ const FALLBACK_STUDENTS = [
 function NavBar({ isOffline }) {
   const loc = useLocation();
   const links = [
-    { to: '/',            label: 'Students' },
-    { to: '/educator',    label: 'Educator' },
-    { to: '/assessments', label: 'Assessments' },
+    { to: '/',              label: 'Students' },
+    { to: '/educator',      label: 'Educator' },
+    { to: '/assessments',   label: 'Assessments' },
+    { to: '/dashboard',     label: 'Content & Assignments' },
+    { to: '/parent',        label: 'Parent' },
+    { to: '/leadership',    label: 'Leadership' },
+    { to: '/student-login', label: 'Student Login' },
   ];
   return (
     <header className="sticky top-0 z-20 bg-indigo-700 text-white shadow-lg">
@@ -54,12 +67,12 @@ function NavBar({ isOffline }) {
             </span>
           )}
         </div>
-        <nav className="flex gap-1">
+        <nav className="flex gap-1 flex-wrap justify-end">
           {links.map(({ to, label }) => (
             <Link
               key={to}
               to={to}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+              className={`px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
                 loc.pathname === to
                   ? 'bg-white text-indigo-700'
                   : 'text-indigo-200 hover:bg-indigo-600'
@@ -357,6 +370,42 @@ function EducatorPage({ isOffline, setIsOffline }) {
   );
 }
 
+// ── Member 3's routes ────────────────────────────────────────────────────────
+// /dashboard hosts Content Library + Assignments + AI Assistant in one page
+// (EducatorDashboard.jsx); its children already branch their UI by role
+// (educator vs student) internally, same pattern as StudentsPage/EducatorPage
+// above, so it just needs a session to exist. ensureAuth() auto-provisions
+// the demo educator if nothing is logged in yet, but leaves an existing
+// session (e.g. a student who used /student-login) untouched.
+function DashboardRoute() {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    ensureAuth().finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-28 text-gray-500 gap-3">
+        <Loader2 className="w-10 h-10 animate-spin text-indigo-600" />
+        <p className="text-base font-medium">Loading dashboard…</p>
+      </div>
+    );
+  }
+
+  return <EducatorDashboard />;
+}
+
+// /parent and /leadership deliberately do NOT call ensureAuth(): there's no
+// real parent/leadership login screen yet (only the demo educator is
+// auto-provisioned), so auto-logging in as an educator here would be wrong.
+// Visiting these routes without a parent/leadership session shows the
+// backend's 401/403 message via each page's existing error handling.
+function StudentLoginPage() {
+  const navigate = useNavigate();
+  return <StudentLoginForm onLoggedIn={() => navigate('/dashboard')} />;
+}
+
 // ── Root App ─────────────────────────────────────────────────────────────────
 export default function App() {
   const [isOffline, setIsOffline] = useState(false);
@@ -367,9 +416,13 @@ export default function App() {
         <NavBar isOffline={isOffline} />
         <main className="flex-1 py-4">
           <Routes>
-            <Route path="/"            element={<StudentsPage  isOffline={isOffline} setIsOffline={setIsOffline} />} />
-            <Route path="/educator"    element={<EducatorPage  isOffline={isOffline} setIsOffline={setIsOffline} />} />
-            <Route path="/assessments" element={<AssessmentPage />} />
+            <Route path="/"              element={<StudentsPage  isOffline={isOffline} setIsOffline={setIsOffline} />} />
+            <Route path="/educator"      element={<EducatorPage  isOffline={isOffline} setIsOffline={setIsOffline} />} />
+            <Route path="/assessments"   element={<AssessmentPage />} />
+            <Route path="/dashboard"     element={<DashboardRoute />} />
+            <Route path="/parent"        element={<ParentDashboard />} />
+            <Route path="/leadership"    element={<LeadershipDashboard />} />
+            <Route path="/student-login" element={<StudentLoginPage />} />
           </Routes>
         </main>
       </div>

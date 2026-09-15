@@ -22,8 +22,22 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['educator', 'leadership', 'parent'],
+      // 'student' added by Member 3: Assignment/Submission (P3's modules)
+      // need a real, logged-in student actor. Students have no credentials
+      // of their own in the Student model, so a student logs in with just
+      // their Student profile id (server/controllers/studentAuthController.js,
+      // itself a P3 placeholder pending a real credential system), which
+      // finds-or-creates a User here with role 'student' and studentProfile
+      // set. Everywhere else in the app, 'student' is not a selectable
+      // registration role (see authController.js register()).
+      enum: ['educator', 'leadership', 'parent', 'student'],
       default: 'educator'
+    },
+    // Only set for role: 'student' — links this login identity back to the
+    // actual Student profile record (personal/academic/family info).
+    studentProfile: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Student'
     }
   },
   {

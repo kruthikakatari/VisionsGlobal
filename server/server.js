@@ -1,20 +1,25 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import mongoose from 'mongoose';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import connectDB from './config/db.js';
 
+// Member 1 (Student/Educator/User + auth)
 import authRoutes from './routes/authRoutes.js';
 import studentRoutes from './routes/studentRoutes.js';
 import educatorRoutes from './routes/educatorRoutes.js';
+
+// Member 2 (Assessment, Progress, learning gaps, recommendations, Sarvam)
 import assessmentRoutes from './routes/assessmentRoutes.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Member 3 (Content, Assignments, AI Assistant, Parent, Leadership, student login)
+import contentRoutes from './routes/contentRoutes.js';
+import assignmentRoutes from './routes/assignmentRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
+import parentRoutes from './routes/parentRoutes.js';
+import studentAuthRoutes from './routes/studentAuthRoutes.js';
+import leadershipRoutes from './routes/leadershipRoutes.js';
 
-dotenv.config({ path: path.join(__dirname, '.env') });
-dotenv.config(); // fallback
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -27,19 +32,31 @@ app.get('/api/health', (req, res) => {
   res.json({ message: 'Server is running' });
 });
 
-// Routes
+// Member 1's routes
 app.use('/api/auth', authRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/educators', educatorRoutes);
-// Assessment & Progress routes (Person 2)
+
+// Member 2's routes
 app.use('/api', assessmentRoutes);
 
-// Database Connection
-mongoose
-  .connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/visions-learn')
-  .then(() => console.log('DB connection successful!'))
-  .catch((err) => console.error('DB connection error:', err));
+// Member 3's routes. studentAuthRoutes shares the /api/auth prefix with
+// authRoutes above (adds POST /student-login alongside their /login and
+// /register — no path collision).
+app.use('/api/content', contentRoutes);
+app.use('/api', assignmentRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/parent', parentRoutes);
+app.use('/api/auth', studentAuthRoutes);
+app.use('/api/leadership', leadershipRoutes);
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+connectDB()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('Failed to connect to MongoDB:', err.message);
+    process.exit(1);
+  });
