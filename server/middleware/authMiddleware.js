@@ -7,9 +7,13 @@
 //   - a payload containing { id, role }
 //   - req.user = { id, role } set for downstream handlers
 //
+// Named authMiddleware.js (not auth.js) to match the path Member 2's
+// assessmentRoutes.js already expects (`../middleware/authMiddleware.js`),
+// so this is a true drop-in slot regardless of who merges first.
+//
 // When Member 1 pushes the real middleware, DELETE this file and re-point every
-// `import { protect, restrictTo } from '../middleware/auth.js'` at theirs (same
-// function names/signatures, so it should be a drop-in swap).
+// `import { protect, restrictTo } from '../middleware/authMiddleware.js'` at
+// theirs (same function names/signatures, so it should be a drop-in swap).
 import jwt from 'jsonwebtoken';
 
 export function protect(req, res, next) {

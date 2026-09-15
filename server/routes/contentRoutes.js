@@ -1,6 +1,6 @@
 import express from 'express';
 import { getContent, createContent } from '../controllers/contentController.js';
-import { protect, restrictTo } from '../middleware/auth.js';
+import { protect, restrictTo } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 

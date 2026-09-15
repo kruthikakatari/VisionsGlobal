@@ -1,7 +1,7 @@
 import express from 'express';
 import { getAssignments, createAssignment, getAssignmentById } from '../controllers/assignmentController.js';
 import { createSubmission, updateSubmission } from '../controllers/submissionController.js';
-import { protect, restrictTo } from '../middleware/auth.js';
+import { protect, restrictTo } from '../middleware/authMiddleware.js';
 
 // Mounted at /api in server.js, so these resolve to:
 //   GET   /api/assignments
