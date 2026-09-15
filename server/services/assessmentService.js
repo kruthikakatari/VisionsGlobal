@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import Assessment from '../models/Assessment.js';
 import Progress from '../models/Progress.js';
+import { detectLearningGaps } from './learningGapService.js';
 
 /**
  * Helper to retrieve Student model instance registered with Mongoose
@@ -13,7 +14,7 @@ const getStudentModel = () => {
 };
 
 /**
- * Service to create a new Assessment and update/create student's Progress
+ * Service to create a new Assessment and update/create student's Progress with detected learning gaps
  * @param {Object} assessmentData
  * @returns {Promise<Object>} Created assessment and updated progress
  */
@@ -56,7 +57,15 @@ export const createAssessmentService = async (assessmentData) => {
 
   const savedAssessment = await assessment.save();
 
-  // 2. Find and update or create Progress document for this student
+  // 2. Detect learning gaps using learningGapService (< 50 rule)
+  const learningGaps = detectLearningGaps({
+    verbalFluency,
+    cognitiveAbility,
+    readingComprehension,
+    writtenCommunication,
+  });
+
+  // 3. Find and update or create Progress document for this student
   let progress = await Progress.findOne({ student: studentId });
 
   if (!progress) {
@@ -66,7 +75,7 @@ export const createAssessmentService = async (assessmentData) => {
       cognitiveAbility,
       readingComprehension,
       writtenCommunication,
-      learningGaps: [],
+      learningGaps,
       updatedAt: new Date(),
     });
   } else {
@@ -74,7 +83,7 @@ export const createAssessmentService = async (assessmentData) => {
     progress.cognitiveAbility = cognitiveAbility;
     progress.readingComprehension = readingComprehension;
     progress.writtenCommunication = writtenCommunication;
-    progress.learningGaps = [];
+    progress.learningGaps = learningGaps;
     progress.updatedAt = new Date();
   }
 
